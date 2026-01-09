@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>裁定済申請一覧</title>
+  <style>
+    body { font-family: Meiryo, sans-serif; padding:1rem; }
+    .search-row { display: flex; flex-wrap: wrap; gap: 1em; margin-bottom: 1em; }
+    .search-row input, .search-row select { padding:0.5em; }
+    table { width:100%; border-collapse:collapse; }
+    th,td { border:1px solid #ccc; padding:0.5em; word-break: break-all;}
+    tr:nth-child(even){background:#f9f9f9;}
+    td.reject-reason, th.reject-reason {
+      max-width: 100px; min-width: 80px; word-break: break-word; text-align: left;
+      vertical-align: top; white-space: pre-line; font-size: 0.95em;
+    }
+    #loading {
+      font-size: 1.5em; color: #333; display: none;
+      position: fixed; top: 40%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255,255,255,0.9);
+      padding: 1.5rem 3rem;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      z-index: 9998;
+    }
+    #errorBox {
+      display: none; position: fixed; top: 30%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: #f44336; color: white; padding: 1rem 2rem;
+      border-radius: 10px; font-size: 1.2em; z-index: 9999;
+      box-shadow: 0 0 15px rgba(0,0,0,0.3);
+    }
+  </style>
+</head>
+<body>
+  <h1>✅ 裁定済申請一覧</h1>
+
+  <!-- ローディング表示 -->
+  <div id="loading">読み込み中…</div>
+  <!-- エラーメッセージ表示 -->
+  <div id="errorBox"></div>
+
+  <div class="search-row">
+    <input id="searchName" placeholder="氏名で検索…">
+    <select id="searchGrade">
+      <option value="">学年で絞込</option>
+      <option value="1">1年</option><option value="2">2年</option><option value="3">3年</option>
+      <option value="4">4年</option><option value="5">5年</option>
+      <option value="S1">専攻科1年</option><option value="S2">専攻科2年</option>
+    </select>
+    <select id="searchCourse">
+      <option value="">コースで絞込</option>
+      <option value="1">1組</option><option value="2">2組</option><option value="3">3組</option>
+      <option value="4">4組</option><option value="5">5組</option>
+      <option value="M">M</option><option value="E">E</option><option value="I">I</option>
+      <option value="C">C</option><option value="A">A</option>
+    </select>
+    <div>
+      欠席開始日:
+      <input type="date" id="searchDateFrom">
+      ～
+      <input type="date" id="searchDateTo">
+    </div>
+  </div>
+
+  <table id="completedTable">
+    <thead><tr></tr></thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    // スタイリッシュエラー表示
+    function showError(message) {
+      const box = document.getElementById('errorBox');
+      box.innerText = message;
+      box.style.display = 'block';
+      setTimeout(() => { box.style.display = 'none'; }, 3000);
+    }
+
+    function render(entries, role) {
+      const thead = document.querySelector('#completedTable thead tr');
+      let thHtml = (role === "事務員" || role === "教務主事") ? `
+        <th>申請日</th><th>氏名</th><th>学年</th><th>コース</th><th>学籍番号</th>
+        <th>理由</th><th>欠席期間</th><th>裁定結果</th><th>裁定日</th><th class="reject-reason">却下理由</th>`
+        : `<th>氏名</th><th>学年</th><th>コース</th><th>学籍番号</th><th>理由</th><th>欠席期間</th>`;
+      thead.innerHTML = thHtml;
+
+      const tbody = document.querySelector('#completedTable tbody');
+      tbody.innerHTML = '';
+      entries.forEach(e => {
+        const rowHtml = (role === "事務員" || role === "教務主事") ? `
+          <td>${e.date}</td><td>${e.name}</td><td>${e.grade || ''}</td><td>${e.course || ''}</td>
+          <td>${e.studentId || ''}</td><td>${e.reason}</td><td>${e.period}</td>
+          <td>${e.result || ''}</td><td>${e.decisionDate || ''}</td><td class="reject-reason">${e.rejectReason || ''}</td>`
+          : `<td>${e.name}</td><td>${e.grade || ''}</td><td>${e.course || ''}</td><td>${e.studentId || ''}</td><td>${e.reason}</td><td>${e.period}</td>`;
+        const tr = document.createElement('tr');
+        tr.innerHTML = rowHtml;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function parsePeriodStart(period) {
+      if (!period) return null;
+      const match = period.match(/^(\d{4})\/(\d{2})\/(\d{2})/);
+      if (!match) return null;
+      return `${match[1]}-${match[2]}-${match[3]}`;
+    }
+
+    function filterEntries() {
+      const qName = document.getElementById('searchName').value.trim();
+      const qGrade = document.getElementById('searchGrade').value;
+      const qCourse = document.getElementById('searchCourse').value;
+      const qDateFrom = document.getElementById('searchDateFrom').value;
+      const qDateTo = document.getElementById('searchDateTo').value;
+
+      if (qDateFrom && qDateTo && qDateFrom > qDateTo) {
+        showError("開始日は終了日より前に設定してください。");
+        return;
+      }
+
+      const qDateFromDate = qDateFrom ? new Date(qDateFrom) : null;
+      const qDateToDate = qDateTo ? new Date(qDateTo) : null;
+
+      const filtered = window.allEntries.filter(e => {
+        const gradeOk =
+          !qGrade ||
+          String(e.grade) === String(qGrade) ||
+          String(e.grade) === String(qGrade).replace("年", "") ||
+          String(e.grade) + "年" === String(qGrade);
+
+        const courseOk =
+          !qCourse ||
+          String(e.course) === String(qCourse) ||
+          String(e.course) === String(qCourse).replace("組", "");
+
+        const nameOk = !qName || (e.name && e.name.includes(qName));
+
+        const periodStartStr = parsePeriodStart(e.period);
+        const periodStartDate = periodStartStr ? new Date(periodStartStr) : null;
+
+        let dateOk = true;
+        if (qDateFromDate && periodStartDate) {
+          dateOk = dateOk && (periodStartDate >= qDateFromDate);
+        }
+        if (qDateToDate && periodStartDate) {
+          dateOk = dateOk && (periodStartDate <= qDateToDate);
+        }
+
+        return gradeOk && courseOk && nameOk && dateOk;
+      });
+
+      render(filtered, window.userRole);
+    }
+
+    function registerEvents() {
+      document.getElementById('searchName').addEventListener('input', filterEntries);
+      document.getElementById('searchDateFrom').addEventListener('input', filterEntries);
+      document.getElementById('searchDateTo').addEventListener('input', filterEntries);
+      document.getElementById('searchGrade').addEventListener('change', filterEntries);
+      document.getElementById('searchCourse').addEventListener('change', filterEntries);
+    }
+
+    function loadCompleted() {
+      document.getElementById('loading').style.display = 'block';
+      google.script.run.withSuccessHandler(res => {
+        window.allEntries = Array.isArray(res.entries) ? res.entries : [];
+        window.userRole = res.role || "事務員";
+        render(window.allEntries, window.userRole);
+        document.getElementById('loading').style.display = 'none';
+      }).getCompletedReviews();
+    }
+
+    window.addEventListener('load', () => {
+      loadCompleted();
+      registerEvents();
+    });
+  </script>
+</body>
+</html>
