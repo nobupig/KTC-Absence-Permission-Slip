@@ -20,19 +20,53 @@ function submitEntries(entries, fileDataArray) {
   // ──────────────── ① ロック取得 ────────────────
   const lock = LockService.getScriptLock();
   try {
-    // 最大 30 秒待ってロックを獲得
-    lock.waitLock(30000);
+    lock.waitLock(30000); // 最大30秒待つ
   } catch (lockErr) {
-    // ロック失敗時はユーザーに「混雑中」を返す
     throw new Error("現在混雑しています。数秒後に再度お試しください。");
   }
 
   try {
     Logger.log("=== 🔵 submitEntries START ===");
-    Logger.log("📥 entries: " + JSON.stringify(entries));
+    Logger.log("✅ typeof entries: " + typeof entries);
+    Logger.log("✅ entries isArray: " + Array.isArray(entries));
     Logger.log("✅ typeof fileDataArray: " + typeof fileDataArray);
     Logger.log("✅ fileDataArray isArray: " + Array.isArray(fileDataArray));
 
+    // ──────────────── ② 入力の正規化（最重要） ────────────────
+    // entries が配列でない場合は即エラー（ここは落としてOK。申請内容自体が不正）
+    if (!Array.isArray(entries) || entries.length === 0) {
+      throw new Error("申請内容が不正です（entries が空、または配列ではありません）。");
+    }
+
+    // fileDataArray は「無い/不正」でも申請自体は通したいので、必ず配列に正規化する
+    if (!Array.isArray(fileDataArray)) {
+      Logger.log("⚠️ fileDataArray が配列ではないため、空配列として処理します。");
+      fileDataArray = [];
+    }
+
+    // fileDataArray の各要素も必ず「配列（＝その申請の添付一覧）」に正規化する
+    // entries 件数に合わせて長さも揃える（足りない分は空配列で埋める）
+    const normalizedFileDataArray = [];
+    for (let i = 0; i < entries.length; i++) {
+      const list = fileDataArray[i];
+      if (Array.isArray(list)) {
+        normalizedFileDataArray[i] = list;
+      } else if (list == null) {
+        // undefined / null は「添付なし」として扱う
+        normalizedFileDataArray[i] = [];
+      } else {
+        // 文字列やオブジェクトが来た場合も落とさず「添付なし」に倒す（今回の map エラー封じ）
+        Logger.log(`⚠️ 添付データ不正：申請${i + 1} は配列ではありません → 添付なし扱い`);
+        Logger.log("⚠️ 受信値: " + JSON.stringify(list));
+        normalizedFileDataArray[i] = [];
+      }
+    }
+
+    // ──────────────── ③ ログ（巨大化注意：本番では必要ならコメントアウト可） ────────────────
+    // Logger.log("📥 entries: " + JSON.stringify(entries)); // 大きくなる場合あり
+    Logger.log("📥 normalizedFileDataArray length: " + normalizedFileDataArray.length);
+
+    // ──────────────── ④ 学生情報など準備 ────────────────
     const email = Session.getActiveUser().getEmail();
     Logger.log("email: " + email);
 
@@ -40,11 +74,18 @@ function submitEntries(entries, fileDataArray) {
     Logger.log("student: " + JSON.stringify(student));
     if (!student) throw new Error("名簿に登録されていません");
 
-    const sheet = SpreadsheetApp.openById('1PolwIbf2e3ebcleGMuUkl_86alI-WwxMR1TfkT7BgCQ').getSheetByName('申請ログ');
-    const statusSheet = SpreadsheetApp.openById("1QfYNeYzAtbNwVm5rUl9cKixXKBbrCkCdu91p1ZUkJ-I").getSheetByName("申請状況");
+    const sheet = SpreadsheetApp
+      .openById('1PolwIbf2e3ebcleGMuUkl_86alI-WwxMR1TfkT7BgCQ')
+      .getSheetByName('申請ログ');
+
+    const statusSheet = SpreadsheetApp
+      .openById("1QfYNeYzAtbNwVm5rUl9cKixXKBbrCkCdu91p1ZUkJ-I")
+      .getSheetByName("申請状況");
+
     const now = new Date();
     const fiscalYear = getFiscalYear_(now);
     const month = ('0' + (now.getMonth() + 1)).slice(-2);
+
     const yearFolder = getOrCreateFolderByName(BASE_FOLDER_ID, `${fiscalYear}年度`);
     const monthFolder = getOrCreateFolder(yearFolder, `${month}月`);
     const studentFolder = getOrCreateFolder(monthFolder, `${student.id}_${student.name}`);
@@ -66,53 +107,75 @@ function submitEntries(entries, fileDataArray) {
       return Utilities.formatDate(jsDate, "JST", "yyyy/MM/dd") + "（" + w[jsDate.getDay()] + "）";
     }
 
-  for (let i = 0; i < entries.length; i++) {
-  const entry = entries[i];
-  const fileDataList = fileDataArray[i];
-  const entryForLog = {
-    reason: entry.reason,
-    other: entry.otherReason || entry.other || "",
-    from: entry.dateFrom || entry.from,
-    periodFrom: entry.periodFrom,
-    to: entry.dateTo || entry.to,
-    periodTo: entry.periodTo
-  };
+    // ──────────────── ⑤ 申請ごとに処理 ────────────────
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
 
-  const folderName = formatDate(now, 'yyyy-MM-dd') + `_申請${i + 1}`;
-  const entryFolder = getOrCreateFolder(studentFolder, folderName);
+      // entry の中身が一部欠けていても落ちにくいように最低限の吸収
+      const entryForLog = {
+        reason: entry.reason,
+        other: entry.otherReason || entry.other || "",
+        from: entry.dateFrom || entry.from,
+        periodFrom: entry.periodFrom,
+        to: entry.dateTo || entry.to,
+        periodTo: entry.periodTo
+      };
 
-  const fileInfoList = saveFilesToFolder(entryFolder, fileDataList, i + 1, student.name);
-  const weekCode = getWeekCode(now);
+      const folderName = formatDate(now, 'yyyy-MM-dd') + `_申請${i + 1}`;
+      const entryFolder = getOrCreateFolder(studentFolder, folderName);
 
-  // ▼ここが重要!! appendLogRowにentryForLogを渡してください
-  appendLogRow(sheet, student, entryForLog, now, fileInfoList, entryFolder.getId(), weekCode);
+      // ★ここが今回の本丸：必ず配列（添付なしなら[]）が入る
+      const fileDataList = normalizedFileDataArray[i];
 
-  // --- 申請状況シートへの記録（こっちは今のentryでOK）---
-  const absencePeriod =
-  `${formatJPDate(entryForLog.from)} ${entryForLog.periodFrom} ～ ${formatJPDate(entryForLog.to)} ${entryForLog.periodTo}`;
-  
-  const logReason =
-    entry.reason + (entry.otherReason ? `（${entry.otherReason}）` : '');
+      // saveFilesToFolder が万一 undefined を返しても落ちないように最終ガード
+      let fileInfoList = [];
+      try {
+        fileInfoList = saveFilesToFolder(entryFolder, fileDataList, i + 1, student.name) || [];
+        if (!Array.isArray(fileInfoList)) {
+          Logger.log(`⚠️ saveFilesToFolder の戻り値が配列ではありません：申請${i + 1} → 空配列扱い`);
+          fileInfoList = [];
+        }
+      } catch (fileErr) {
+        // 添付保存だけ失敗しても、申請自体は止めるべきかは運用次第。
+        // 「添付必須」運用なら throw、そうでなければ継続。
+        // ここでは “添付必須” を尊重してエラー扱い（＝申請を止める）にします。
+        Logger.log(`❌ 添付保存でエラー：申請${i + 1} / ${fileErr.message}`);
+        throw new Error(`添付ファイルの保存に失敗しました（申請${i + 1}）。別のファイルで再試行するか、教務部へ相談してください。`);
+      }
 
-  statusSheet.appendRow([
-    email,
-    student.name,
-    absencePeriod,
-    logReason,
-    "未処理", // 裁定
-    ""        // 却下理由
-  ]);
-}
+      const weekCode = getWeekCode(now);
 
-    Logger.log("submitEntries正常終了");
+      // appendLogRow は fileInfoList が必ず配列で入る
+      appendLogRow(sheet, student, entryForLog, now, fileInfoList, entryFolder.getId(), weekCode);
+
+      // --- 申請状況シートへの記録 ---
+      const absencePeriod =
+        `${formatJPDate(entryForLog.from)} ${entryForLog.periodFrom} ～ ${formatJPDate(entryForLog.to)} ${entryForLog.periodTo}`;
+
+      const logReason =
+        entryForLog.reason + (entryForLog.other ? `（${entryForLog.other}）` : '');
+
+      statusSheet.appendRow([
+        email,
+        student.name,
+        absencePeriod,
+        logReason,
+        "未処理", // 裁定
+        ""        // 却下理由
+      ]);
+    }
+
+    Logger.log("✅ submitEntries 正常終了");
     return "申請を受け付けました";
+
   } catch (e) {
-    Logger.log("submitEntriesエラー: " + e.message);
+    Logger.log("❌ submitEntries エラー: " + e.message);
     throw e;
-   } finally {
+  } finally {
     lock.releaseLock();
-   }
+  }
 }
+
 
 
 function getFiscalYear_(date) {

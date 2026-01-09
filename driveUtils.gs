@@ -10,51 +10,90 @@ function getOrCreateFolder(parent, name) {
   return folders.hasNext() ? folders.next() : parent.createFolder(name);
 }
 
-function saveFilesToFolder(folder, base64Files, entryIndex, studentName){
-  const fileInfoList = []; 
+function saveFilesToFolder(folder, base64Files, entryIndex, studentName) {
+  const fileInfoList = [];
 
+  // ─────────────────────
+  // ① 入力の最終防御
+  // ─────────────────────
   if (!Array.isArray(base64Files) || base64Files.length === 0) {
-    Logger.log("⚠️ 添付ファイルが空、または配列ではありません。");
+    Logger.log(`⚠️ [申請${entryIndex}] 添付ファイルなし、または配列ではありません`);
     return [];
   }
 
   for (let i = 0; i < base64Files.length; i++) {
     const f = base64Files[i];
-    Logger.log(`🔍 raw file info (index ${i}): ${JSON.stringify(f)}`);
-    Logger.log(`   ↪ typeof f.data = ${typeof f.data}, length = ${f.data ? f.data.length : 'null'}`);
 
-    if (!f || !f.data) {
-      Logger.log(`⚠️ ファイルデータが無効なためスキップされました (index ${i})`);
+    // オブジェクト構造チェック
+    if (!f || typeof f !== 'object') {
+      Logger.log(`⚠️ [申請${entryIndex}] 無効なファイルオブジェクト (index ${i})`);
       continue;
     }
 
+    if (!f.data || typeof f.data !== 'string') {
+      Logger.log(`⚠️ [申請${entryIndex}] base64 データ不正 (index ${i})`);
+      continue;
+    }
+
+    Logger.log(`🔍 [申請${entryIndex}] file ${i + 1}: ${f.name || 'no-name'}, base64 length=${f.data.length}`);
+
     try {
+      // ─────────────────────
+      // ② base64 デコード
+      // ─────────────────────
       const decoded = Utilities.base64Decode(f.data);
-      const extension = getFileExtension(f.name || 'file.pdf');
-      const renamed = `${studentName}_${i + 1}${extension}`;
+
+      if (!decoded || decoded.length === 0) {
+        Logger.log(`⚠️ [申請${entryIndex}] デコード結果が空 (index ${i})`);
+        continue;
+      }
+
+      // ─────────────────────
+      // ③ ファイル名・拡張子
+      // ─────────────────────
+      const originalName = typeof f.name === 'string' ? f.name : 'file';
+      const extension = getFileExtension(originalName) || '.bin';
+
+      const renamed = `${studentName}_${entryIndex}_${i + 1}${extension}`;
       const safeName = sanitizeFilename(renamed);
 
-      const blob = Utilities.newBlob(decoded, f.type || 'application/octet-stream', safeName);
+      // MIME が壊れていても保存できるように保険
+      const mimeType =
+        typeof f.type === 'string' && f.type.trim() !== ''
+          ? f.type
+          : 'application/octet-stream';
+
+      // ─────────────────────
+      // ④ Drive 保存
+      // ─────────────────────
+      const blob = Utilities.newBlob(decoded, mimeType, safeName);
       const file = folder.createFile(blob);
 
-      Logger.log(`✅ ファイル保存成功: ${file.getName()} (${file.getUrl()})`);
+      Logger.log(`✅ [申請${entryIndex}] 保存成功: ${file.getName()}`);
+
       fileInfoList.push({
         name: file.getName(),
         url: file.getUrl(),
         id: file.getId()
-      }); 
+      });
+
     } catch (e) {
-      Logger.log(`❌ ファイル保存失敗 (${f.name || `file_${i}`}): ${e.message}`);
+      // 1ファイル失敗しても他は継続
+      Logger.log(`❌ [申請${entryIndex}] ファイル保存失敗 (${f.name || 'unknown'}): ${e.message}`);
     }
   }
 
+  // ─────────────────────
+  // ⑤ 最終チェック
+  // ─────────────────────
   if (fileInfoList.length === 0) {
-    Logger.log("⚠️ 保存されたファイルがありません。すべての処理に失敗した可能性があります。");
+    Logger.log(`⚠️ [申請${entryIndex}] 有効な添付ファイルが1件も保存されませんでした`);
     return [];
   }
 
   return fileInfoList;
 }
+
 
 function getFileExtension(name) {
   const match = name.match(/\.[0-9a-zA-Z]+$/);
