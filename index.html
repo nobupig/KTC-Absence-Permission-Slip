@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>公欠・忌引届</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&amp;display=swap" rel="stylesheet"/>
+<style>
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background-color: #f2f4f6;
+      margin: 0;
+      padding: 1rem;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #104e74;
+      font-size: 1.8rem;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .login-badge {
+      background-color: #104e74;
+      color: #fff;
+      font-weight: 600;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      text-align: center;
+      margin-bottom: 1.5rem;
+      font-size: 0.95rem;
+    }
+    label {
+      font-weight: 600;
+      margin-top: 0.8rem;
+      display: block;
+      font-size: 0.95rem;
+    }
+    select, input[type="date"], input[type="text"], input[type="file"], textarea {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.2rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-sizing: border-box;
+      font-size: 0.95rem;
+    }
+    button {
+      background-color: #104e74;
+      color: white;
+      padding: 0.7rem 1rem;
+      font-size: 0.95rem;
+      border: none;
+      border-radius: 6px;
+    }
+    button:hover {
+      background-color: #0d3e5d;
+      cursor: pointer;
+    }
+    .step {
+      display: none;
+      margin-bottom: 1rem;
+      border: 1px solid #ccc;
+      padding: 1rem;
+      border-radius: 8px;
+      background: #f8fbfd;
+    }
+    .step.active { display: block; }
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+     .entry-card {
+      background: #eef4f8;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 0.8rem;
+      margin: 1rem 0;
+    }
+    #entryList {
+      margin-top: 2rem;
+    }
+
+    .sticky-footer {
+      position: sticky;
+      bottom: 0;
+      margin-top: 2rem;
+      background: white;
+      padding-top: 1rem;
+    }
+    .text-link-button {
+  font-size: 0.85rem;
+  background: none;
+  border: none;
+  color: #555;
+  text-decoration: underline;
+  padding: 0;
+  cursor: pointer;
+}
+#confirmAddModal .modal-content {
+  text-align: center;
+  max-width: 400px;
+  font-size: 1rem;
+}
+
+#confirmAddModal h3 {
+  margin-top: 0;
+  font-size: 1.1rem;
+  color: #104e74;
+}
+
+#confirmAddModal .modal-buttons {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: space-around;
+  gap: 1rem;
+}
+
+#confirmAddModal .modal-buttons button {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: none;
+  font-size: 0.95rem;
+}
+
+#confirmAddModal .modal-buttons button:first-child {
+  background-color: #104e74;
+  color: white;
+}
+
+#confirmAddModal .modal-buttons button:last-child {
+  background-color: #ccc;
+  color: #333;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+
+.modal-content {
+  background-color: #fff;
+  padding: 1.5em 2em;
+  border-radius: 12px;
+  text-align: center;
+  max-width: 90%;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  font-size: 1.2em;
+}
+
+.modal-button {
+  margin-top: 1em;
+  padding: 0.6em 1.2em;
+  background-color: #004080;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1em;
+  cursor: pointer;
+}
+
+.modal-button:hover {
+  background-color: #0066cc;
+}
+
+#loadingSpinner {
+  font-size: 1.3rem;
+  color: #104e74;
+  text-align: center;
+  margin-top: 2rem;
+  font-weight: bold;
+}
+
+/* ===== スマホ最適化用のレスポンシブデザイン ===== */
+@media screen and (max-width: 600px) {
+
+  .nav-buttons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .nav-buttons button,
+  .nav-buttons .text-link-button {
+    width: 100%;
+    margin-bottom: 0.5rem;
+    text-align: center;
+  }
+
+  button {
+    font-size: 1rem;
+    padding: 1rem;
+  }
+
+  input, select, textarea {
+    font-size: 1rem;
+  }
+
+  .modal-content {
+    padding: 1rem;
+    font-size: 1rem;
+  }
+
+  .modal-buttons {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .modal-buttons button {
+    width: 100%;
+  }
+
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+@media screen and (max-width: 600px) {
+  .modal-buttons {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .modal-buttons button {
+    width: 100%;
+  }
+}
+
+.modal-buttons button:first-child {
+  background-color: #ccc;
+  color: #333;
+}
+
+.modal-buttons button:nth-child(2) {
+  background-color: #1976d2;
+  color: white;
+}
+
+.modal-buttons button:last-child {
+  background-color: #388e3c;
+  color: white;
+}
+
+#entryList {
+  list-style: none;
+  padding: 0;
+}
+
+#entryList li {
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  background-color: #f8f8f8;
+  border-radius: 4px;
+}
+
+.text-link-button {
+  font-size: 0.85rem;
+  background: none;
+  border: none;
+  color: #d00;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.file-list-remove-btn {
+  background: #e0e0e0;
+  color: #555;
+  font-size: 0.85rem;
+  border: none;
+  border-radius: 4px;
+  padding: 0.2em 0.6em;
+  margin-left: 0.6em;
+  cursor: pointer;
+  vertical-align: middle;
+  transition: background 0.2s;
+}
+.file-list-remove-btn:hover {
+  background: #ffcccc;
+  color: #d00;
+}
+
+
+/* 添付書類ガイド用ボタン */
+.guide-buttons {
+  display: flex;
+  justify-content: center;   /* 中央寄せ */
+  gap: 1rem;                  /* ボタン間の隙間 */
+  margin: 1.5em 0;            /* 上下マージン */
+}
+
+.guide-buttons a {
+  display: inline-block;
+  padding: 0.6em 1.2em;      /* ボタン内余白 */
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: 4px;         /* 角丸 */
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+/* 公欠届ガイド（青） */
+.guide-buttons a.guide-public {
+  background-color: #007bff;
+  color: #fff;
+}
+.guide-buttons a.guide-public:hover {
+  background-color: #0069d9;
+}
+
+/* 忌引届ガイド（緑） */
+.guide-buttons a.guide-funeral {
+  background-color: #28a745;
+  color: #fff;
+}
+.guide-buttons a.guide-funeral:hover {
+  background-color: #218838;
+}
+
+/* 注意書き全体 */
+.note-text {
+  font-size: 0.9rem;
+  color: #555;
+  margin-top: 0.5rem;
+  line-height: 1.4;
+}
+
+/* 強調ブロック */
+.note-text__important {
+  display: block;               /* 独立した段落に */
+  margin: 0.75em 0 0;           /* 上に余白を */
+  padding: 0.5em 1em;           /* 内側余白 */
+  background-color: #f8d7da;    /* 薄い赤系背景 */
+  border-left: 4px solid #f5c6cb;/* アクセントの左ライン */
+  color: #721c24;               /* 文字色を濃い赤系に */
+  font-weight: 700;             /* 太字 */
+  border-radius: 4px;
+}
+
+  </style>
+</head>
+<body>
+<div class="container">
+<h1>公欠・忌引届</h1>
+<div class="login-badge">
+<?= student.name ?> さん（<?= student.email ?>）としてログイン中
+    </div>
+<form id="absenceForm">
+<div id="errorBox"></div>
+<!-- Step 1 -->
+<div class="step active" id="step1">
+
+<label for="reason">申請理由</label>
+<select id="reason" name="reason" required="">
+<option value="">選択してください</option>
+<option value="1"> インフル・コロナ等による出席停止</option>
+<option value="2"> 学校保健法施行規則による感染症</option>
+<option value="3"> 交通機関の遅延・運休</option>
+<option value="4"> クラブ活動中のケガ</option>
+<option value="5"> 授業中のケガ</option>
+<option value="6"> 寮生活中でのケガ</option>
+<option value="7"> 就職活動</option>
+<option value="8"> 大学等推薦受験</option>
+<option value="9"> クラブの試合</option>
+<option value="10"> 学会発表等</option>
+<option value="11"> 忌引き（葬儀等）</option>
+<option value="other"> その他（理由を記入）</option>
+</select>
+<div id="stepOther" style="display:none;">
+<label for="otherReason">その他の理由（必須）</label>
+<input id="otherReason" name="otherReason" type="text"/>
+</div>
+<!-- ✅ ボタンの並びを修正：左＝キャンセル、右＝次へ -->
+<div class="nav-buttons" style="justify-content: flex-end;">
+<button aria-label="ステップ2へ進む" onclick="window.showStep(2)" type="button">次へ</button>
+</div>
+</div>
+<!-- Step 2 -->
+<!-- Step 2：開始・終了日を1画面で -->
+<div class="step" id="step2">
+  <p>※欠席期間は本日を含め、前後1か月以内のみ申請可能です</p>
+
+  <label for="from">欠席開始日</label>
+  <input id="from" name="from" required type="date">
+
+  <label for="periodFrom">何限目から</label>
+<select id="periodFrom" name="periodFrom" required>
+  <option value="">選択</option>
+  <option value="SHR">SHR</option>
+  <option value="1限">1限</option>
+  <option value="2限">2限</option>
+  <option value="3限">3限</option>
+  <option value="4限">4限</option>
+  <option value="5限">5限</option>
+  <option value="6限">6限</option>
+  <option value="7限">7限</option>
+  <option value="8限">8限</option>
+  <option value="9限">9限</option>
+  <option value="10限">10限</option>
+</select>
+
+<label for="to" style="margin-top:1.5em;">欠席終了日</label>
+<input id="to" name="to" required type="date">
+
+<label for="periodTo">何限目まで</label>
+<select id="periodTo" name="periodTo" required>
+  <option value="">選択</option>
+  <option value="SHR">SHR</option>
+  <option value="1限">1限</option>
+  <option value="2限">2限</option>
+  <option value="3限">3限</option>
+  <option value="4限">4限</option>
+  <option value="5限">5限</option>
+  <option value="6限">6限</option>
+  <option value="7限">7限</option>
+  <option value="8限">8限</option>
+  <option value="9限">9限</option>
+  <option value="10限">10限</option>
+</select>
+
+
+  <div class="nav-buttons" style="justify-content: flex-end; gap: 1rem;">
+    <button aria-label="ステップ1に戻る" onclick="window.showStep(1, true)" type="button"
+      style="background-color: #aaa; color: white;">
+      ⬅ 戻る
+    </button>
+    <button aria-label="ステップ3へ進む" onclick="window.showStep(3)" type="button"
+      style="background-color: #104e74; color: white;">
+      次へ ➡
+    </button>
+  </div>
+</div>
+
+<!-- Step 4 -->
+<div class="step" id="step3">
+<label>添付ファイル（PDF・画像等、複数可）</label>
+<div id="entryListContainer" style="margin-top: 1.5rem;">
+<h4>現在の申請内容（合計 <span id="entryCount">0</span> 件）</h4>
+<ul id="entryList"></ul>
+<!-- ✅ 最新の申請内容（ファイル含む）を表示するための追加枠 -->
+</div>
+<div id="fileContainer">
+  <input type="file" id="fileInput" accept="application/pdf,image/*" multiple style="display:inline-block;">
+  <ul id="fileList"></ul>
+</div>
+<p class="note-text">
+  ※ 添付ファイルは選択した時点で自動的に保存されます。<br/>
+  <span class="note-text__important">
+  ※ 添付は原則必須です。<br/>
+  ※ 添付できない場合は原本のコピーを提出するか、教務部へ相談してください。
+  </span>
+</p>
+
+<!-- ✅ 申請が登録された通知メッセージ -->
+<div id="flashMessage" style="display:none; margin-top: 1rem; color: green; font-weight: bold; text-align: center;"></div>
+
+<!-- ✅ スピナー（申請中に表示） -->
+<div id="formSpinner" style="display:none; margin: 1rem auto; text-align:center;">
+  🔄 処理中…
+</div>
+
+  <div class="guide-buttons">
+    <a
+      href="https://drive.google.com/file/d/1SdXHGAzUFRhRGb02BCYcm7deL-MNUDhh/view?usp=sharing"
+      target="_blank"
+      class="guide-public"
+    >
+      添付書類ガイドを見る（公欠届）
+    </a>
+    <a
+      href="https://drive.google.com/file/d/1J1Y8JkzUCBh3tQxJ4HKd4VMDjzDRtH5P/view?usp=sharing"
+      target="_blank"
+      class="guide-funeral"
+    >
+      添付書類ガイドを見る（忌引届）
+    </a>
+  </div>
+
+<!-- ✅ ボタン配置：中央寄せ & 間隔あり -->
+<div style="display:flex; justify-content:center; gap:1.5rem; margin-top:1rem;">
+  <button onclick="window.showStep(2, true)" type="button" style="background-color:#aaa; color:white;">
+    ⬅ 戻る
+  </button>
+  <button id="confirmBtn" onclick="window.openConfirmSummary(); return false;" type="button" style="background-color:#2e7d32; color:white;">
+    ✅ 申請する
+  </button>
+</div>
+
+<!-- ✅ この申請をやめるボタン -->
+<div style="text-align: center; margin-top: 1rem;">
+  <button id="cancelPendingEntry" class="text-link-button" style="display: none;" onclick="window.cancelCurrentEntry()">
+    この申請をやめる
+  </button>
+</div>
+</div>
+
+<!-- 件数表示 -->
+<div class="sticky-footer">
+<div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+<button type="button" onclick="window.open('https://script.google.com/a/macros/ktc.ac.jp/s/AKfycbw_QfOs3fz0i51svJzbKGNAOOqbuxgM95vfrWM3DdrsKNuWaTXOtJk7DJMNH5OE6XZJKg/exec', '_blank')">
+  申請状況を確認する
+</button>
+</div>
+</div>
+</form>
+
+</div>
+
+<!-- ✅ 処理中・完了表示モーダル（このモーダルは別に配置する） -->
+<div class="modal" id="customModal">
+<div class="modal-content">
+     <!-- +++ ここからスピナー +++ -->
+      <div id="modalSpinner" style="display:none; margin-top:1em;">
+     <span class="spinner"></span> 処理中…
+     </div>
+      <!-- +++ ここまでスピナー +++ -->
+
+ <div class="modal-buttons" style="margin-top: 1.5rem; justify-content: center;">
+      <button class="modal-button" id="retryBtn" style="display:none;" onclick="window.submitConfirmed()">
+      </button>
+      <button class="modal-button" id="closeModalBtn" style="display:none;" onclick="window.closeModal()">
+        ✖ 閉じる
+      </button>
+    </div>
+</div>
+</div>
+
+<!-- 新：申請内容の確認モーダル -->
+<div class="modal" id="entrySummaryModal">
+  <div class="modal-content">
+   <h3 id="entrySummaryTitle">申請内容の確認</h3>
+    <div id="modalErrorBox" style="display:none; color:#d32f2f; margin-bottom:1rem;"></div>
+    <div id="entrySummaryText" style="font-size: 0.95rem; text-align: left; margin-top: 1rem;"></div>
+    <div id="fileSummaryText" style="font-size: 0.9rem; color: #444; margin-top: 1rem;"></div>
+     <div id="loadingSpinner" style="display:none; margin-bottom:0.5rem;">送信中...</div>
+     <div class="modal-buttons" id="beforeSubmitButtons" style="margin-top: 1.5rem;">
+      <button id="goBackBtn" onclick="document.getElementById('entrySummaryModal').style.display='none'">
+        ⬅ 内容を修正する（戻る）
+      </button>
+      <button id="submitBtn" onclick="window.submitConfirmed()">
+        ✅ この内容で申請する
+      </button>
+    </div>
+    <div class="modal-buttons" id="afterSubmitButtons" style="margin-top: 1.5rem; display: none;">
+      <button id="addMoreBtn" onclick="window.proceedNewEntry()">
+        ＋追加で申請する
+      </button>
+      <button id="closeSummaryBtn" onclick="window.closeSummaryModal()">
+        閉じる
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<script defer="">
+const entries = [];
+let lastRegisteredIndex = null;
+let cameFromAdd = false;
+let fromStep3 = false;
+let tempEntry = null;
+
+    
+    document.getElementById('reason').addEventListener('change', function () {
+      document.getElementById('stepOther').style.display = this.value === 'other' ? 'block' : 'none';
+    });
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error(`ファイル「${file.name}」の読み込みに失敗しました。`));
+    reader.readAsDataURL(file);
+  });
+}
+
+window.showStep = function(n, skipValidation = false) {
+  // step3以外なら fromStep3 フラグリセット
+  if (n < 3) {
+    fromStep3 = false;
+  }
+
+  const reason      = document.getElementById('reason');
+  const from        = document.getElementById('from');
+  const to          = document.getElementById('to');
+  const periodFrom  = document.getElementById('periodFrom');
+  const periodTo    = document.getElementById('periodTo');
+
+  if (!skipValidation) {
+    // ステップ2 のバリデーション
+    if (n === 2 && reason.value === '') {
+      showError('申請理由を選択してください');
+      return;
+    }
+    if (n === 2 && reason.value === 'other') {
+      const otherText = document.getElementById('otherReason').value.trim();
+      if (!otherText) {
+        showError('その他の理由を入力してください');
+        return;
+      }
+    }
+
+    // ステップ3 のバリデーション＆エントリ作成
+    if (n === 3) {
+      const otherReason = document.getElementById('otherReason').value.trim();
+
+      if (!from.value || !periodFrom.value || !to.value || !periodTo.value) {
+        showError('欠席開始日・終了日、何限目すべてを入力してください');
+        return;
+      }
+      if (new Date(from.value) > new Date(to.value)) {
+        showError('開始日は終了日より前の日付を指定してください');
+        return;
+      }
+      if (from.value === to.value) {
+        const periods = ['SHR','1限','2限','3限','4限','5限','6限','7限','8限','9限','10限'];
+        if (periods.indexOf(periodFrom.value) > periods.indexOf(periodTo.value)) {
+          showError('同一日の場合、「何限目から」は「何限目まで」より前である必要があります');
+          return;
+        }
+      }
+
+      // ── エントリ作成 ──
+      const newEntry = {
+        reason:     reason.options[reason.selectedIndex].text,
+        other:      reason.value === 'other' ? otherReason : '',
+        from:       from.value,
+        to:         to.value,
+        periodFrom: periodFrom.value,
+        periodTo:   periodTo.value
+      };
+      const exists = entries.some(e => isSameEntry(e.entry, newEntry));
+      if (!exists) {
+        entries.push({ entry: newEntry, files: currentFiles.slice() });
+        currentFiles = [];
+        updateFileListUI();
+      }
+      lastRegisteredIndex = entries.length - 1;
+      tempEntry = null;
+
+      // ── プレビュー更新 ──
+      const previewList = document.getElementById('entryList');
+      const countDisplay = document.getElementById('entryCount');
+      if (previewList && countDisplay) {
+        previewList.innerHTML = '';
+        const li = document.createElement('li');
+        li.className = 'entry-item';
+        const e = entries[entries.length - 1];
+        const summary = `
+          <strong>${e.entry.from}（${e.entry.periodFrom}）〜${e.entry.to}（${e.entry.periodTo}）</strong><br>
+          理由：${e.entry.reason}${e.entry.other ? `（${e.entry.other}）` : ''}
+        `;
+        li.innerHTML = summary;
+        previewList.appendChild(li);
+        countDisplay.textContent = entries.length;
+        const cancelBtn = document.getElementById('cancelPendingEntry');
+        cancelBtn.style.display = (cameFromAdd && tempEntry !== null) ? 'inline' : 'none';
+      }
+    } // ── if (n === 3) 閉じ ──
+  } // ── if (!skipValidation) 閉じ ──
+
+  // エラークリア
+  clearError();
+
+  // ステップ1に戻るときの初期化
+  if (n === 1) {
+    if (!cameFromAdd) {
+      entries.length = 0;
+      updateEntryList();
+      tempEntry = null;
+    }
+    cameFromAdd = false;
+  }
+
+  // 「追加で申請」からの戻り処理
+  if (n === 3 && document.querySelector('.step.active')?.id === 'step3' && fromStep3) {
+    entries.pop();
+    updateEntryList();
+    fromStep3 = false;
+  }
+
+  // 実際のステップ切り替え
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById('step' + n).classList.add('active');
+};
+
+// 申請ごとのfiles配列管理
+let currentFiles = [];
+
+// ファイル選択で自動追加
+document.getElementById('fileInput').addEventListener('change', function() {
+  if (this.files.length > 0) {
+    for (const f of this.files) {
+      currentFiles.push(f);
+    }
+    this.value = ""; // inputリセット
+    updateFileListUI();
+    if (entries.length > 0 && document.getElementById('step3').classList.contains('active')) {
+      entries[entries.length - 1].files = currentFiles.slice();
+    }
+  }
+});
+
+function updateFileListUI() {
+  const fileList = document.getElementById('fileList');
+  if (!fileList) return;
+  fileList.innerHTML = '';
+  currentFiles.forEach((f, i) => {
+    const li = document.createElement('li');
+    li.innerHTML = `${f.name} (${Math.round(f.size/1024)}KB)
+  <button class="file-list-remove-btn" onclick="removeFile(${i})">🗑️削除</button>`;
+
+    fileList.appendChild(li);
+  });
+}
+window.removeFile = function(idx) {
+  currentFiles.splice(idx, 1);
+  updateFileListUI();
+};
+
+
+    function showError(message) {
+      let errBox = document.getElementById('errorBox');
+      errBox.textContent = message;
+      errBox.style.background = '#ffdddd';
+      errBox.style.color = '#900';
+      errBox.style.padding = '0.8rem';
+      errBox.style.marginBottom = '1rem';
+      errBox.style.borderRadius = '6px';
+      errBox.style.textAlign = 'center';
+    }
+
+    function clearError() {
+      let errBox = document.getElementById('errorBox');
+      errBox.textContent = '';
+      errBox.removeAttribute('style');
+    }
+
+
+// 比較関数（isSameEntry）も script.html の中に追加
+function isSameEntry(a, b) {
+  return a.reason === b.reason &&
+         a.from === b.from &&
+         a.to === b.to &&
+         a.periodFrom === b.periodFrom &&
+         a.periodTo === b.periodTo &&
+         a.other === b.other;
+}
+
+
+function flashMessage(msg, duration = 3000) {
+  const flash = document.getElementById('flashMessage');
+  if (!flash) return;
+  flash.textContent = msg;
+  flash.style.display = 'block';
+  setTimeout(() => {
+    flash.style.display = 'none';
+  }, duration);
+}
+
+function closeAddModal() {
+  document.getElementById('confirmAddModal').style.display = 'none';
+}
+
+
+    // ✅ 1か月前後の制限を日付入力に設定
+function setDateLimits() {
+  const today = new Date();
+  const yyyyMMdd = (d) => d.toISOString().split("T")[0];
+
+  const minDate = new Date(today);
+  minDate.setDate(today.getDate() - 30);
+  const maxDate = new Date(today);
+  maxDate.setDate(today.getDate() + 30);
+
+  document.getElementById('from').setAttribute('min', yyyyMMdd(minDate));
+  document.getElementById('from').setAttribute('max', yyyyMMdd(maxDate));
+  document.getElementById('to').setAttribute('min', yyyyMMdd(minDate));
+  document.getElementById('to').setAttribute('max', yyyyMMdd(maxDate));
+}
+
+// ✅ 確認モーダルから送信実行：GASへ送る処理
+window.submitConfirmed = async function() {
+// モーダルを「送信中状態」に初期化
+document.getElementById('retryBtn').style.display = 'none';
+document.getElementById('closeModalBtn').style.display = 'none';
+document.getElementById('beforeSubmitButtons').style.display = 'none';
+document.getElementById('afterSubmitButtons').style.display = 'none';
+
+// ✅ タイトルを非表示にして、送信中を強調表示
+const titleEl = document.getElementById('entrySummaryTitle');
+if (titleEl) titleEl.style.display = 'none';
+
+const spinner = document.getElementById('loadingSpinner');
+spinner.style.display = 'block';
+spinner.textContent = '🔄 送信中...';
+
+
+  try {
+  const entrySummaryText = document.getElementById('entrySummaryText');
+  const fileSummaryText = document.getElementById('fileSummaryText');
+  const afterButtons = document.getElementById('afterSubmitButtons');
+  const submitButton    = document.getElementById('submitBtn');
+  const goBackButton    = document.getElementById('goBackBtn');
+  const spinner         = document.getElementById('loadingSpinner');
+
+  // ───── 二重クリック防止 ─────
+  submitButton.disabled = true;
+  // ───── スピナー表示 ─────
+  spinner.style.display = 'block';
+
+  // モーダル内を「送信中…」に切り替え
+  entrySummaryText.innerHTML ="";
+  fileSummaryText.innerHTML = "";
+  goBackButton.disabled = true;
+
+  // エントリがなければエラー表示して戻す
+  if (entries.length === 0) {
+     // ── スピナー／ボタン状態 戻し ──
+    spinner.style.display = 'none';
+    submitButton.disabled = false;
+    
+    entrySummaryText.innerHTML = `
+      <p style="text-align:center; color:#d32f2f;">
+        申請内容がありません。Step 1 に戻ってください。
+      </p>`;
+    goBackButton.disabled = false;
+    submitButton.disabled = true;
+    return;
+  }
+
+  // 重複を排除してから base64 変換
+  const seen = new Set();
+  const uniqueEntries = [];
+  for (const e of entries) {
+    const key = JSON.stringify(e.entry);
+    if (!seen.has(key)) {
+      uniqueEntries.push(e);
+      seen.add(key);
+    }
+  }
+  const finalEntries = uniqueEntries.map(e => e.entry);
+  const filesToSend = [];
+  for (const e of uniqueEntries) {
+    const fileObjs = [];
+    for (const file of (e.files || [])) {
+      const base64 = await fileToBase64(file);
+      fileObjs.push({
+        name: file.name,
+        type: file.type,
+        data: base64.split(',')[1]
+      });
+    }
+    filesToSend.push(fileObjs);
+  }
+
+  // GAS 側の関数名を yourGASFunction に置き換えてください
+  google.script.run
+    .withSuccessHandler((msg) => {
+      // ── 成功時はスピナーを隠してボタンを再有効化 ──
+      spinner.style.display = 'none';
+      submitButton.disabled = false;
+      goBackButton.disabled = false;
+
+ const titleEl = document.getElementById('entrySummaryTitle');
+if (titleEl) {
+  titleEl.style.display = 'block';
+  titleEl.textContent = '申請受付しました';
+}
+
+      // 送信成功時：モーダル内を「受付完了メッセージ」に切り替え
+      entrySummaryText.innerHTML = `
+        <p style="text-align:center; font-size:1rem; color:#2e7d32; padding:1rem;">
+           公欠の可否については1週間程度で「申請状況を確認する」画面からご確認ください。
+        </p>`;
+      fileSummaryText.innerHTML = "";
+
+      // 送信後に表示するボタン群を表示
+      afterButtons.style.display = 'flex';
+
+      // フォーム本体をリセット
+      cameFromAdd = false;
+      entries.length = 0;
+      updateEntryList();
+      document.getElementById('stepOther').style.display = 'none';
+      clearError();
+    })
+   .withFailureHandler((err) => {
+    document.getElementById('retryBtn').style.display = 'inline-block';
+       spinner.style.display = 'none';
+       const msg = err.message ||
+       "❌ 申請処理でエラーが発生しました。\n" +
+      "（原因： " + (err.message||"不明") + "）";
+       // Lock 取得失敗（混雑）時は専用アイコン＋文言に
+       if (msg.includes("混雑しています")) {
+         entrySummaryText.innerHTML = `           
+         <p style="text-align:center; color:#d9822b; padding:1rem;">
+             ⚠️ システムが混み合っています。数秒待ってから再度「申請する」を押してください。
+           </p>`;       } else {         entrySummaryText.innerHTML = `
+           <p style="text-align:center; color:#d32f2f; padding:1rem;">             ❌ ${msg}
+           </p>`;
+       }
+
+       // 申請するボタンのみ再有効化
+       submitButton.disabled = false;
+       })
+    .submitEntries(finalEntries, filesToSend);
+ } catch (err) {
+// 予期せぬ同期エラーをキャッチ
+flashMessage(`❌ エラーが発生しました：${err.message}`, 5000);
+ spinner.style.display = 'none';
+
+   // ボタンを元に戻す
+  document.getElementById('submitBtn').disabled = false;
+  document.getElementById('goBackBtn').disabled = false;
+ }
+};
+
+window.cancelCurrentEntry = function () {
+  tempEntry = null;
+  document.getElementById('absenceForm').reset();
+  document.getElementById('stepOther').style.display = 'none';
+  clearError();
+
+  updateEntryList();
+
+  // ✅ 条件：申請が1件以上なら step3（一覧）へ、ゼロ件なら Step1 に戻る
+  if (entries.length > 0) {
+    showStep(3, true);
+  } else {
+    showStep(1, true);
+  }
+}
+
+// ✅ ページロード時に日付制限を設定
+window.addEventListener('load', () => {
+  setDateLimits();
+ 
+});
+
+
+function closeModal() {
+  const modal = document.getElementById('customModal');
+  modal.style.display = 'none';
+
+  // ✅ フォーム初期化
+   document.getElementById('confirmBtn').disabled = false;
+   document.getElementById('loadingSpinner').style.display = 'none';
+  clearError();
+
+   // ✅ ステップ1に戻る
+  setTimeout(() => showStep(1), 50);
+
+  // ✅ 申請内容をクリア
+   entries.length = 0;  
+  updateEntryList();
+}
+
+
+window.startNewEntry = function () {
+  // ✅ 未登録のtempEntryがある場合は先に保存
+  if (
+    tempEntry &&
+    tempEntry.reason &&
+    tempEntry.from && tempEntry.to &&
+    tempEntry.periodFrom && tempEntry.periodTo &&
+    !entries.some(e => isSameEntry(e.entry, tempEntry))
+  ) {
+    entries.push({ entry: tempEntry, files: [] }); // filesは空でも登録
+  }
+
+  tempEntry = null;
+  cameFromAdd = true;
+  fromStep3 = true;
+
+  // ✅ フォーム初期化
+  document.getElementById('absenceForm').reset();
+  document.getElementById('stepOther').style.display = 'none';
+  clearError();
+
+  // ✅ モーダルを閉じて Step1 に戻る
+  document.getElementById('entrySummaryModal').style.display = 'none';
+  setTimeout(() => showStep(1), 50);
+};
+
+
+function updateEntryList() {
+  const list = document.getElementById("entryList");
+  const countDisplay = document.getElementById("entryCount");
+  if (!list || !countDisplay) return;
+
+  list.innerHTML = "";
+
+  if (entries.length === 0) {
+    list.innerHTML = "<p>登録された申請はありません。</p>";
+    countDisplay.textContent = "0";
+    return;
+  }
+
+[...entries].reverse().forEach((entryObj, reverseIndex) => {
+  const index = entries.length - 1 - reverseIndex; // 元の index を保持
+
+  const li = document.createElement("li");
+  li.className = "entry-item";
+
+  const e = entryObj.entry;
+  const summary = `<strong>${e.from}（${e.periodFrom}）〜${e.to}（${e.periodTo}）</strong><br>理由：${e.reason}`;
+
+
+  let html = summary;
+ if (entryObj.files && entryObj.files.length > 0) {
+  const fileNames = entryObj.files.map((f, fIdx) => {
+  return `
+    📎 ${f.name} (${Math.round(f.size / 1024)}KB)
+    <button onclick="window.removeAttachedFile(${index}, ${fIdx})"
+            style="margin-left: 0.5rem; font-size: 0.75rem; color: red; background: none; border: none; cursor: pointer;">
+      🗑️削除
+    </button>
+  `;
+}).join("<br>");
+  html += `<div style="font-size: 0.9rem; margin-top: 0.5rem; padding: 0.5rem; background: #e8f5e9; border-left: 4px solid #388e3c; border-radius: 4px; color: #2e7d32;">
+    ✅ 添付ファイル（${entryObj.files.length}件）:<br>${fileNames}
+  </div>`;
+}
+ else {
+    html += `<div style="font-size: 0.85rem; margin-top: 0.4rem; color: #d32f2f; font-weight: 500;">
+      添付なし（追加可能）
+    </div>`;
+  }
+
+
+
+  li.innerHTML = html;
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.textContent = `🗑️ この申請を削除`;
+  deleteBtn.className = "text-link-button";
+  deleteBtn.style.marginTop = "0.5rem";
+  deleteBtn.onclick = () => {
+    entries.splice(index, 1);  // 元の配列から正しい index を削除
+    updateEntryList();
+  };
+
+  li.appendChild(deleteBtn);
+
+const editBtn = document.createElement("button");
+editBtn.textContent = `✏️ この申請を編集`;
+editBtn.className = "text-link-button";
+editBtn.style.marginLeft = "1rem";
+editBtn.onclick = () => {
+  window.editEntry(index);
+};
+
+li.appendChild(editBtn);
+
+
+  list.appendChild(li);
+});
+
+  countDisplay.textContent = entries.length;
+
+}
+
+window.removeAttachedFile = function (entryIndex, fileIndex) {
+  if (entries[entryIndex] && entries[entryIndex].files) {
+    entries[entryIndex].files.splice(fileIndex, 1);  // 指定ファイルを削除
+    flashMessage("📎 添付ファイルを削除しました", 2500);
+    updateEntryList();  // 再描画
+  }
+};
+
+
+window.editEntry = function(index) {
+  const target = entries[index];
+  if (!target) return;
+
+  // entry 情報を tempEntry にコピー
+  tempEntry = { ...target.entry };
+  cameFromAdd = true;
+  entries.splice(index, 1);  // 編集のため一旦削除
+  updateEntryList();         // 表示更新
+
+  // 理由などの入力欄に値を復元
+  const reasonValue = reverseLookupReason(tempEntry.reason);
+  document.getElementById('reason').value = reasonValue;
+  document.getElementById('from').value = tempEntry.from;
+  document.getElementById('to').value = tempEntry.to;
+  document.getElementById('periodFrom').value = tempEntry.periodFrom;
+  document.getElementById('periodTo').value = tempEntry.periodTo;
+  document.getElementById('otherReason').value = tempEntry.other || '';
+
+  // 「その他」が選ばれていた場合の欄を表示
+  if (reasonValue === 'other') {
+    document.getElementById('stepOther').style.display = 'block';
+  } else {
+    document.getElementById('stepOther').style.display = 'none';
+  }
+
+  // Step1 に移動
+  showStep(1, true);
+};
+
+
+function reverseLookupReason(labelText) {
+  const options = document.querySelectorAll('#reason option');
+  for (const option of options) {
+    if (option.textContent.trim() === labelText.trim()) {
+      return option.value;
+    }
+  }
+  return '';
+}
+
+ 
+
+window.addEventListener('unhandledrejection', (evt) => {
+flashMessage(`⚠️ システムエラー：${evt.reason?.message || evt.reason}`, 5000);
+});
+
+
+
+ // 予期せぬPromise拒否をキャッチしてモーダル内に
+ window.addEventListener('unhandledrejection', event => {
+   const modalErr = document.getElementById('modalErrorBox');
+   modalErr.textContent = `予期せぬエラーが発生しました：${event.reason?.message || event.reason}`;
+   modalErr.style.display = 'block';
+   // 「申請する」ボタンだけ再有効化
+   document.getElementById('submitBtn').disabled = false;
+   event.preventDefault();
+ });
+
+window.openConfirmSummary = function () {
+  // モーダルの内容エリア取得
+
+    if (entries.length > 0 && currentFiles.length > 0) {
+    entries[entries.length - 1].files = currentFiles.slice();
+  }
+
+  const summaryContainer = document.getElementById('entrySummaryText');
+  const fileContainer = document.getElementById('fileSummaryText');
+
+  if (!summaryContainer || !fileContainer) return;
+
+  let summaryHTML = '';
+  let fileHTML = '';
+
+  // 申請データ（entries）をループして内容を生成
+  entries.forEach((entryObj, index) => {
+    const e = entryObj.entry;
+    summaryHTML += `
+      <div style="margin-bottom: 1rem;">
+        <strong>【${index + 1}件目】</strong><br>
+        日付：${e.from}（${e.periodFrom}）〜${e.to}（${e.periodTo}）<br>
+        理由：${e.reason}${e.other ? `（${e.other}）` : ''}
+      </div>
+    `;
+
+    if (Array.isArray(entryObj.files) && entryObj.files.length > 0) {
+      const files = entryObj.files
+        .map(f => `- ${f.name}（${Math.round(f.size / 1024)}KB）`)
+        .join('<br>');
+      fileHTML += `
+        <div style="margin-bottom: 1rem;">
+          <strong>${index + 1}. 添付ファイル：</strong><br>${files}
+        </div>
+      `;
+    } else {
+      fileHTML += `
+        <div style="margin-bottom: 1rem;">
+          <strong>${index + 1}. 添付ファイル：</strong><br>なし 🚨（必要な場合は添付してください）
+        </div>
+      `;
+    }
+  });
+
+  summaryContainer.innerHTML = summaryHTML.trim();
+  fileContainer.innerHTML = fileHTML.trim();
+
+  // モーダルを表示
+  document.getElementById('entrySummaryTitle').textContent = '申請内容の確認';
+  document.getElementById('entrySummaryModal').style.display = 'flex';
+  document.getElementById('beforeSubmitButtons').style.display = 'flex';
+document.getElementById('afterSubmitButtons').style.display = 'none';
+document.getElementById('entrySummaryModal').style.display = 'flex';
+
+};
+
+window.closeSummaryModal = function() {
+  // 申請データと添付ファイルをクリア
+  entries.length = 0;
+  currentFiles.length = 0;
+  tempEntry = null;
+  updateEntryList();
+  updateFileListUI && updateFileListUI();
+
+  // フォーム内容をリセット
+  document.getElementById('absenceForm').reset();
+  document.getElementById('stepOther').style.display = 'none';
+  
+  // モーダルを非表示
+  document.getElementById('entrySummaryModal').style.display = 'none';
+
+  // Step.1に戻す
+  window.showStep(1, true);
+};
+
+
+window.proceedNewEntry = function() {
+  // リセット処理
+  entries.length = 0;
+  currentFiles.length = 0;
+  tempEntry = null;
+  updateEntryList();
+  updateFileListUI && updateFileListUI();
+  document.getElementById('absenceForm').reset();
+  document.getElementById('stepOther').style.display = 'none';
+  document.getElementById('entrySummaryModal').style.display = 'none';
+  window.showStep(1, true);
+};
+
+window.closeSummaryModal = function() {
+  // 完全リセット＆閉じる
+  entries.length = 0;
+  currentFiles.length = 0;
+  tempEntry = null;
+  updateEntryList();
+  updateFileListUI && updateFileListUI();
+  document.getElementById('absenceForm').reset();
+  document.getElementById('stepOther').style.display = 'none';
+  document.getElementById('entrySummaryModal').style.display = 'none';
+  window.showStep(1, true);
+};
+
+
+console.log("✅ script loaded");
+  console.log("typeof openConfirmSummary:", typeof window.openConfirmSummary);
+
+</script>
+</body>
+</html>

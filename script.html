@@ -1,0 +1,85 @@
+<script>
+
+function parseYearMonth(dateStr) {
+  // 例: "2025/06/18（水）1限 ～ 2025/06/19（木）4限"
+  let m = dateStr.match(/^(\d{4})\/(\d{2})/);
+  if (!m) return {year:"不明", month:"不明"};
+  return {year: m[1], month: String(Number(m[2]))};
+}
+
+function renderStatus(entries) {
+  // 年度→月でグループ化
+  const grouped = {};
+  entries.forEach(e => {
+    const {year, month} = parseYearMonth(e.date || "");
+    if (!grouped[year]) grouped[year] = {};
+    if (!grouped[year][month]) grouped[year][month] = [];
+    grouped[year][month].push(e);
+  });
+
+  const container = document.getElementById('accordionContainer');
+  container.innerHTML = "";
+
+  if (!entries || entries.length === 0) {
+    container.innerHTML = "<p>該当する申請状況がありません。</p>";
+    return;
+  }
+
+  Object.keys(grouped).sort((a,b)=>b-a).forEach(year => {
+    // 年度アコーディオン
+    const yearDiv = document.createElement("div");
+    yearDiv.className = "accordion-year";
+    yearDiv.innerHTML = `<button class="accordion-toggle">${year}年度</button><div class="accordion-panel"></div>`;
+    container.appendChild(yearDiv);
+
+    const yearBtn = yearDiv.querySelector(".accordion-toggle");
+    const yearPanel = yearDiv.querySelector(".accordion-panel");
+    yearPanel.style.display = "none";
+
+    yearBtn.onclick = () => {
+      yearPanel.style.display = (yearPanel.style.display === "none") ? "block" : "none";
+    };
+
+    // 月ごとのパネル
+    Object.keys(grouped[year]).sort((a,b)=>b-a).forEach(month => {
+      const monthDiv = document.createElement("div");
+      monthDiv.className = "accordion-month";
+      monthDiv.style.marginLeft = "1em";
+      monthDiv.innerHTML = `<button class="accordion-toggle">${month}月</button><div class="accordion-panel"></div>`;
+      yearPanel.appendChild(monthDiv);
+
+      const monthBtn = monthDiv.querySelector(".accordion-toggle");
+      const monthPanel = monthDiv.querySelector(".accordion-panel");
+      monthPanel.style.display = "none";
+
+      monthBtn.onclick = () => {
+        monthPanel.style.display = (monthPanel.style.display === "none") ? "block" : "none";
+      };
+
+      // 申請カード表示
+      grouped[year][month].forEach(entry => {
+        const card = document.createElement("div");
+        card.className = "entry-card";
+        card.innerHTML = `
+          <div>📅 <b>${entry.date}</b></div>
+          <div>理由：${entry.reason}</div>
+         <div class="${
+  entry.decision === '許可' ? 'status-approved' :
+  entry.decision === '却下' ? 'status-rejected' :
+  'status-pending'
+}">
+  裁定：${
+    entry.decision === '許可' ? '許可' :
+    entry.decision === '却下' ? '却下' + (entry.rejectReason ? '（' + entry.rejectReason + '）' : '') :
+    entry.decision === '未処理' ? '処理中' :
+    '処理中'  // 空欄やnullでも処理中
+  }
+</div>
+        `;
+        monthPanel.appendChild(card);
+      });
+    });
+  });
+}
+
+</script>

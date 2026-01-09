@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>申請状況の確認</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    /* CSSはそのまま */
+    body { font-family:'Segoe UI','Hiragino Sans','Meiryo',sans-serif; background:#f4f7fa; margin:0; padding:0 0.5em; }
+    h1 { font-size:2em; margin:1em 0 1.2em; letter-spacing:1px; }
+    .accordion-toggle { width:100%; background:#2a6ae7; color:#fff; border:none; border-radius:12px; padding:1em 0.8em; font-size:1.2em; font-weight:600; margin-bottom:0.5em; box-shadow:0 2px 8px #0002; transition:background 0.2s; }
+    .accordion-toggle:active,.accordion-toggle:focus { background:#1746a0; }
+    .accordion-month .accordion-toggle { background:#4390fc; font-size:1.07em; padding-left:1.6em; }
+    .accordion-panel { margin-bottom:0.7em; }
+    .entry-card { border-radius:14px; background:#fff; box-shadow:0 2px 10px #0001; border:1px solid #e3e6ef; margin:0.7em 0; padding:1em 1em 1em 1.4em; position:relative; transition:box-shadow 0.2s; }
+    .entry-card::before { content:"📄"; position:absolute; left:0.5em; top:1em; font-size:1.3em; opacity:0.6; }
+    .entry-card:hover { box-shadow:0 4px 24px #0002; border-color:#90caf9; }
+    .entry-card>div { margin-bottom:0.2em; font-size:1.07em; }
+    .status-approved { color:#08860c; font-weight:bold; }
+    .status-pending { color:#777; font-weight:bold; }
+    .status-rejected { color:#e53935; font-weight:bold; }
+    @media(max-width:600px){ .accordion-toggle{font-size:1.07em;padding:1em 0.7em;} .entry-card{font-size:1em;padding:0.9em 0.9em 0.9em 1.2em;} }
+  </style>
+  <script>
+    // parseYearMonthとrenderStatusをまとめて1つのスクリプトに
+    function parseYearMonth(dateStr) {
+      const m = dateStr.match(/^(\d{4})\/(\d{2})/);
+      return m ? { year:m[1], month:String(Number(m[2])) } : { year:"不明", month:"不明" };
+    }
+    
+    function renderStatus(entries) {
+       const spinner = document.getElementById('loadingSpinner');
+       if (spinner) spinner.style.display = 'none';  // ✅ 読み込み完了後に非表示
+
+      const container = document.getElementById('accordionContainer');
+      if (!entries || !Array.isArray(entries)) {
+        container.innerHTML = '<p>データが取得できませんでした。</p>';
+        return;
+      }
+      if (entries.length === 0) {
+        container.innerHTML = '<p>該当する申請状況がありません。</p>';
+        return;
+      }
+      // グループ化
+      const grouped = {};
+      entries.forEach(e => {
+        const { year, month } = parseYearMonth(e.date||'');
+        grouped[year] = grouped[year] || {};
+        grouped[year][month] = grouped[year][month] || [];
+        grouped[year][month].push(e);
+      });
+      // 描画
+      container.innerHTML = '';
+      Object.keys(grouped).sort((a,b)=>b-a).forEach(year=>{
+        const yDiv = document.createElement('div'); yDiv.className='accordion-year';
+        yDiv.innerHTML=`<button class="accordion-toggle">${year}年度</button><div class="accordion-panel"></div>`;
+        container.appendChild(yDiv);
+        const panelY=yDiv.querySelector('.accordion-panel'); panelY.style.display='none';
+        yDiv.querySelector('.accordion-toggle').onclick=()=>{
+          panelY.style.display = panelY.style.display==='none'?'block':'none';
+        };
+        Object.keys(grouped[year]).sort((a,b)=>b-a).forEach(month=>{
+          const mDiv=document.createElement('div'); mDiv.className='accordion-month'; mDiv.style.marginLeft='1em';
+          mDiv.innerHTML=`<button class="accordion-toggle">${month}月</button><div class="accordion-panel"></div>`;
+          panelY.appendChild(mDiv);
+          const panelM=mDiv.querySelector('.accordion-panel'); panelM.style.display='none';
+          mDiv.querySelector('.accordion-toggle').onclick=()=>{
+            panelM.style.display = panelM.style.display==='none'?'block':'none';
+          };
+          grouped[year][month].forEach(entry=>{
+            const card=document.createElement('div'); card.className='entry-card';
+            card.innerHTML=`<div>📅 <b>${entry.date}</b></div><div>理由：${entry.reason}</div><div class="${
+              entry.decision==='許可'?'status-approved':entry.decision==='却下'?'status-rejected':'status-pending'
+            }">裁定：${entry.decision==='許可'?'許可':entry.decision==='却下'?'却下'+(entry.rejectReason?`（${entry.rejectReason}）`:''):'処理中'}</div>`;
+            panelM.appendChild(card);
+          });
+        });
+      });
+    }
+  </script>
+</head>
+<body>
+  <h1>申請状況の確認</h1>
+
+ <!-- ✅ スピナー表示 -->
+ <div id="loadingSpinner" style="text-align:center; font-size:1.2em; color:#1976d2; margin-top:2rem; font-weight:bold;">
+   読み込み中...
+ </div>
+  <div id="accordionContainer" style="margin-top:2rem;"></div>
+  <script>
+    // サーバーから注入されたentriesをJS変数に
+    try {
+
+       // ✅ スピナー表示
+       const spinner = document.getElementById('loadingSpinner');
+       if (spinner) spinner.style.display = 'block';
+
+
+      const entries = window.entriesData = <?!= JSON.stringify(entries || []) ?>;
+      renderStatus(entries);
+    } catch(e) {
+      console.error('entries parse error:', e);
+        const spinner = document.getElementById('loadingSpinner');
+       if (spinner) spinner.style.display = 'none';
+     
+      document.getElementById('accordionContainer').innerHTML = '<p>データの読み込みに失敗しました。</p>';
+    }
+  </script>
+</body>
+</html>
